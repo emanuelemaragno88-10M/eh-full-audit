@@ -1,0 +1,9 @@
+{
+  "name": "eh-full-audit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ECOM HOUSE Audit Tool — Shopify app (OAuth + GDPR webhooks)",
+  "engines": {
+    "node": ">=18"
+  }
+}
