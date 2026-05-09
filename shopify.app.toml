@@ -4,7 +4,7 @@ application_url = "https://eh-full-audit.vercel.app/"
 embedded = true
 
 [access_scopes]
-scopes = "read_products"
+scopes = "read_customers,read_orders,read_products"
 
 [auth]
 redirect_urls = [
