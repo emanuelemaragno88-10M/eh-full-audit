@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECOM HOUSE Audit Tool</title>
+<meta name="shopify-api-key" content="edc2ea8f83118b6f34be6dda9229bb32" />
+<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F6F6F7;
+    --surface: #FFFFFF;
+    --border: #E1E3E5;
+    --border-strong: #C9CCCF;
+    --text: #202223;
+    --text-subdued: #6D7175;
+    --text-muted: #8C9196;
+    --primary: #202223;
+    --primary-hover: #2C2D2F;
+    --success: #008060;
+    --success-bg: #E0F5EF;
+    --warning: #B98900;
+    --warning-bg: #FFF4D5;
+    --critical: #D72C0D;
+    --critical-bg: #FBEAE5;
+    --info: #2C6ECB;
+    --info-bg: #EBF4FE;
+    --gold: #C9A25A;
+    --shadow: 0 1px 0 rgba(0,0,0,0.05);
+    --shadow-md: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; font-size: 14px; line-height: 1.45; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  /* Top bar with brand + nav */
+  .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 1.5px; font-size: 13px; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, var(--primary), #444); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; letter-spacing: 0; }
+  .brand-name span { color: var(--gold); }
+  .nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+  .nav button { background: transparent; border: 1px solid transparent; color: var(--text-subdued); font: inherit; font-weight: 500; font-size: 13px; padding: 7px 12px; border-radius: 8px; cursor: pointer; transition: all 0.12s; }
+  .nav button:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+  .nav button.active { color: var(--text); background: var(--surface); border-color: var(--border); box-shadow: var(--shadow); }
+
+  /* Cards & layout */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 16px; }
+  .card-pad { padding: 20px 24px; }
+  .card-head { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .card-head h2 { font-size: 15px; font-weight: 600; }
+  .card-head p { color: var(--text-subdued); font-size: 13px; }
+  .grid { display: grid; gap: 16px; }
+  .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+  /* Typography */
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.2px; }
+  h2 { font-size: 15px; font-weight: 600; }
+  h3 { font-size: 14px; font-weight: 600; }
+  .muted { color: var(--text-subdued); }
+  .meta { color: var(--text-muted); font-size: 12px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: #fff; border: 1px solid var(--primary); font: inherit; font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 8px; cursor: pointer; text-decoration: none; transition: all 0.12s; box-shadow: var(--shadow); }
+  .btn:hover { background: var(--primary-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); box-shadow: var(--shadow); }
+  .btn.secondary:hover { background: #FAFAFA; }
+  .btn.meta { background: #1877F2; border-color: #1877F2; }
+  .btn.meta:hover { background: #166FE5; }
+
+  /* Banners / status */
+  .banner { display: flex; gap: 12px; padding: 14px 16px; border-radius: 10px; border: 1px solid; align-items: flex-start; }
+  .banner.info { background: var(--info-bg); border-color: #BAD4F6; color: #1F4F99; }
+  .banner.success { background: var(--success-bg); border-color: #A4DDC8; color: #006149; }
+  .banner.warning { background: var(--warning-bg); border-color: #F4D572; color: #856200; }
+  .banner.critical { background: var(--critical-bg); border-color: #F1B7AC; color: #B0270B; }
+  .banner-icon { font-size: 16px; line-height: 1; }
+  .banner-body { font-size: 13px; line-height: 1.5; }
+
+  /* Score gauge */
+  .gauge-wrap { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .gauge { position: relative; width: 160px; height: 160px; flex-shrink: 0; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge-track { stroke: var(--border); fill: none; stroke-width: 12; }
+  .gauge-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 0.6s; }
+  .gauge-fill.grade-A, .gauge-fill.grade-B { stroke: var(--success); }
+  .gauge-fill.grade-C { stroke: var(--info); }
+  .gauge-fill.grade-D { stroke: var(--warning); }
+  .gauge-fill.grade-F { stroke: var(--critical); }
+  .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge-grade { font-size: 44px; font-weight: 700; line-height: 1; }
+  .gauge-grade.grade-A, .gauge-grade.grade-B { color: var(--success); }
+  .gauge-grade.grade-C { color: var(--info); }
+  .gauge-grade.grade-D { color: var(--warning); }
+  .gauge-grade.grade-F { color: var(--critical); }
+  .gauge-score { font-size: 13px; color: var(--text-subdued); font-weight: 500; margin-top: 4px; }
+  .gauge-summary { flex: 1; min-width: 240px; }
+  .gauge-summary h2 { margin-bottom: 6px; }
+
+  /* Category cards */
+  .cat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .cat-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+  .cat-title { font-size: 13px; font-weight: 600; }
+  .cat-score { font-size: 18px; font-weight: 700; }
+  .cat-summary { font-size: 12.5px; color: var(--text-subdued); line-height: 1.5; }
+  .status-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .status-dot.good { background: var(--success-bg); color: var(--success); }
+  .status-dot.warning { background: var(--warning-bg); color: var(--warning); }
+  .status-dot.critical { background: var(--critical-bg); color: var(--critical); }
+
+  /* Action items */
+  .action-row { display: grid; grid-template-columns: 80px 1fr auto; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--border); align-items: center; }
+  .action-row:first-child { border-top: 0; }
+  .action-priority { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; justify-self: start; }
+  .action-priority.high { background: var(--critical-bg); color: var(--critical); }
+  .action-priority.medium { background: var(--warning-bg); color: var(--warning); }
+  .action-priority.low { background: var(--info-bg); color: var(--info); }
+  .action-title { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+  .action-impact { font-size: 12px; color: var(--text-subdued); line-height: 1.5; }
+  .action-area { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+
+  /* Welcome / hero */
+  .hero { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: center; }
+  .hero-text h1 { font-size: 26px; margin-bottom: 8px; }
+  .hero-text p { color: var(--text-subdued); font-size: 14px; line-height: 1.6; margin-bottom: 18px; max-width: 540px; }
+  .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .hero-art { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #1a1a1a, #333); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-weight: 700; letter-spacing: 4px; font-size: 13px; }
+  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .hero-art { display: none; } .action-row { grid-template-columns: 1fr; } }
+
+  /* Connect Meta page */
+  .connect-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .connect-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--border); }
+  .connect-step:first-child { border-top: 0; padding-top: 0; }
+  .connect-step .num { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .connect-step .body { flex: 1; }
+  .connect-step .body h3 { margin-bottom: 4px; }
+  .connect-step .body p { font-size: 13px; color: var(--text-subdued); line-height: 1.5; }
+
+  /* Loading + error */
+  .center-state { padding: 60px 20px; text-align: center; color: var(--text-subdued); }
+  .spinner { display: inline-block; width: 22px; height: 22px; border: 2.5px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Landing (when not embedded) */
+  .landing { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; background: #000; color: #fff; }
+  .landing-card { max-width: 520px; text-align: center; }
+  .landing-card h1 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+  .landing-card h1 .gold { color: var(--gold); }
+  .landing-card p { color: #999; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+  .landing-badge { display: inline-block; background: #1a1a15; color: var(--gold); font-size: 11px; font-weight: 600; padding: 6px 14px; border-radius: 4px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; border: 1px solid rgba(201,162,90,0.2); }
+  .landing form { display: flex; gap: 8px; max-width: 420px; margin: 0 auto; }
+  .landing input { flex: 1; padding: 11px 14px; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; font: inherit; }
+  .landing input::placeholder { color: #555; }
+  .landing button { background: var(--gold); color: #000; border: none; padding: 11px 18px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="root"><div class="center-state"><div class="spinner"></div><div>Loading…</div></div></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "htm": "https://esm.sh/htm@3.1.1"
+  }
+}
+</script>
+
+<script type="module">
+import React, { useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import htm from 'htm';
+const html = htm.bind(React.createElement);
+
+const params = new URLSearchParams(window.location.search);
+const shopParam = params.get('shop');
+const hostParam = params.get('host');
+const isEmbedded = !!hostParam;
+
+const root = createRoot(document.getElementById('root'));
+
+// ============ NOT EMBEDDED — landing or install redirect ============
+if (!isEmbedded) {
+  if (shopParam) {
+    window.location.href = '/api/auth?shop=' + encodeURIComponent(shopParam);
+  } else {
+    root.render(html`<${Landing} />`);
+  }
+} else {
+  root.render(html`<${App} />`);
+}
+
+function Landing() {
+  const [shop, setShop] = useState('');
+  function submit(e) {
+    e.preventDefault();
+    const s = shop.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(s)) {
+      alert('Enter a valid shop domain like your-store.myshopify.com');
+      return;
+    }
+    window.location.href = '/api/auth?shop=' + encodeURIComponent(s);
+  }
+  return html`
+    <div class="landing">
+      <div class="landing-card">
+        <div class="landing-badge">ECOM HOUSE</div>
+        <h1>Audit Tool <span class="gold">·</span> Shopify App</h1>
+        <p>Connect your Shopify store and Meta Ads account to generate a full performance audit with prioritized recommendations.</p>
+        <form onSubmit=${submit}>
+          <input type="text" placeholder="your-store.myshopify.com" value=${shop} onInput=${e => setShop(e.target.value)} />
+          <button type="submit">Install</button>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+// ============ EMBEDDED APP ============
+
+async function getSessionToken() {
+  if (window.shopify && typeof window.shopify.idToken === 'function') {
+    return await window.shopify.idToken();
+  }
+  throw new Error('App Bridge not ready');
+}
+
+async function api(path, opts = {}) {
+  const token = await getSessionToken();
+  const res = await fetch(path, {
+    ...opts,
+    headers: {
+      ...(opts.headers || {}),
+      Authorization: 'Bearer ' + token,
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || 'Request failed: ' + res.status);
+  }
+  return res.json();
+}
+
+function App() {
+  const [page, setPage] = useState('dashboard');
+  const [appBridgeReady, setAppBridgeReady] = useState(!!window.shopify);
+
+  useEffect(() => {
+    if (window.shopify) { setAppBridgeReady(true); return; }
+    const i = setInterval(() => {
+      if (window.shopify) { setAppBridgeReady(true); clearInterval(i); }
+    }, 100);
+    return () => clearInterval(i);
+  }, []);
+
+  if (!appBridgeReady) {
+    return html`<div class="center-state"><div class="spinner"></div><div>Initializing App Bridge…</div></div>`;
+  }
+
+  return html`
+    <div class="app">
+      <${TopBar} page=${page} setPage=${setPage} />
+      ${page === 'dashboard' && html`<${Dashboard} setPage=${setPage} />`}
+      ${page === 'connect' && html`<${ConnectMeta} />`}
+      ${page === 'report' && html`<${Report} />`}
+      ${page === 'actions' && html`<${ActionItems} />`}
+      ${page === 'test' && html`<${TestInstructions} />`}
+    </div>
+  `;
+}
+
+function TopBar({ page, setPage }) {
+  const tabs = [
+    ['dashboard', 'Dashboard'],
+    ['connect', 'Connect Meta'],
+    ['report', 'Audit Report'],
+    ['actions', 'Action Items'],
+    ['test', 'Test Instructions'],
+  ];
+  return html`
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">EH</div>
+        <div class="brand-name">ECOM <span>HOUSE</span></div>
+      </div>
+      <nav class="nav">
+        ${tabs.map(([k, label]) => html`
+          <button key=${k} class=${page === k ? 'active' : ''} onClick=${() => setPage(k)}>${label}</button>
+        `)}
+      </nav>
+    </div>
+  `;
+}
+
+function Dashboard({ setPage }) {
+  return html`
+    <div class="card card-pad">
+      <div class="hero">
+        <div class="hero-text">
+          <h1>Welcome to your audit workspace</h1>
+          <p>Generate a complete performance audit of your Shopify store and Meta Ads account in minutes. We score 4 categories, surface ranked action items, and benchmark you against the ECOM HOUSE method.</p>
+          <div class="hero-cta">
+            <button class="btn" onClick=${() => setPage('report')}>View Sample Audit Report</button>
+            <button class="btn secondary" onClick=${() => setPage('connect')}>Connect Meta Ads</button>
+          </div>
+        </div>
+        <div class="hero-art">ECOM HOUSE</div>
+      </div>
+    </div>
+    <div class="card card-pad">
+      <div class="banner info">
+        <div class="banner-icon">i</div>
+        <div class="banner-body"><strong>What you'll get:</strong> Health score (A–F), 4 category breakdowns (Store Performance, Ad Creative Health, Funnel Optimization, Retention), and a prioritized action list with expected impact.</div>
+      </div>
+    </div>
+  `;
+}
+
+function ConnectMeta() {
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    function onMessage(e) {
+      if (e.data && e.data.type === 'meta-connect') {
+        setStatus(e.data.success ? 'connected' : 'error');
+        if (!e.data.success) setError('Meta authorization was cancelled or failed.');
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  async function startConnect() {
+    setStatus('starting'); setError(null);
+    try {
+      const data = await api('/api/meta/connect');
+      const w = window.open(data.authorizeUrl, 'meta-connect', 'width=600,height=700');
+      if (!w) throw new Error('Popup blocked. Allow popups and try again.');
+      setStatus('waiting');
+    } catch (err) {
+      setStatus('error'); setError(err.message);
+    }
+  }
+
+  return html`
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Connect your Meta Ads account</h2>
+          <p>Read-only access to ad performance, creatives, and engagement.</p>
+        </div>
+      </div>
+      <div class="card-pad">
+        <div class="connect-grid">
+          <div class="connect-step">
+            <div class="num">1</div>
+            <div class="body">
+              <h3>Authenticate with Facebook</h3>
+              <p>Log in to the Facebook account that has access to the ad account you want audited.</p>
+            </div>
+          </div>
+          <div class="connect-step">
+            <div class="num">2</div>
+            <div class="body">
+              <h3>Grant read-only access</h3>
+              <p>We request <code>ads_read</code> permissions only. We never modify or post anything.</p>
+            </div>
+          </div>
+          <div class="connect-step">
+            <div class="num">3</div>
+            <div class="body">
+              <h3>Pick the ad account to audit</h3>
+              <p>If you manage multiple ad accounts, you'll select which one to analyze.</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn meta" onClick=${startConnect} disabled=${status === 'starting' || status === 'waiting'}>
+            ${status === 'starting' ? 'Opening…' : status === 'waiting' ? 'Waiting for Meta…' : status === 'connected' ? 'Reconnect Meta' : 'Continue with Facebook'}
+          </button>
+          ${status === 'connected' && html`<span class="status-dot good">Connected</span>`}
+        </div>
+        ${error && html`
+          <div style="margin-top:14px"><div class="banner critical"><div class="banner-icon">!</div><div class="banner-body">${error}</div></div></div>
+        `}
+        ${status === 'connected' && html`
+          <div style="margin-top:14px"><div class="banner success"><div class="banner-icon">✓</div><div class="banner-body">Meta connected. Head to <strong>Audit Report</strong> to view your results.</div></div></div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+function Report() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    api('/api/audit-data').then(setData).catch(err => setError(err.message));
+  }, []);
+
+  if (error) return html`<div class="card card-pad"><div class="banner critical"><div class="banner-icon">!</div><div class="banner-body">Couldn't load audit data: ${error}</div></div></div>`;
+  if (!data) return html`<div class="card card-pad center-state"><div class="spinner"></div><div>Generating audit…</div></div>`;
+
+  const { overall, categories } = data;
+  const grade = overall.grade;
+  const score = overall.score;
+  const C = 2 * Math.PI * 70;
+  const offset = C * (1 - score / 100);
+
+  return html`
+    <div class="card card-pad">
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle class="gauge-track" cx="80" cy="80" r="70" />
+            <circle class="gauge-fill grade-${grade}" cx="80" cy="80" r="70" stroke-dasharray=${C} stroke-dashoffset=${offset} />
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-grade grade-${grade}">${grade}</div>
+            <div class="gauge-score">${score} / 100</div>
+          </div>
+        </div>
+        <div class="gauge-summary">
+          <h2>Overall Account Health</h2>
+          <p class="muted" style="margin:6px 0 14px;font-size:13.5px;line-height:1.55">${overall.label}</p>
+          <p class="meta">Generated ${new Date(data.generatedAt).toLocaleString()} · Shop: ${data.shop}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h2>Category Breakdown</h2><p>Score and status for each pillar of the ECOM HOUSE method.</p></div></div>
+      <div class="card-pad">
+        <div class="grid cols-2">
+          ${categories.map(c => html`
+            <div key=${c.key} class="cat-card">
+              <div class="cat-head">
+                <div>
+                  <div class="cat-title">${c.title}</div>
+                  <div style="margin-top:4px"><span class="status-dot ${c.status}">${c.status}</span></div>
+                </div>
+                <div class="cat-score">${c.score}</div>
+              </div>
+              <div class="cat-summary">${c.summary}</div>
+            </div>
+          `)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function ActionItems() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    api('/api/audit-data').then(setData).catch(err => setError(err.message));
+  }, []);
+
+  if (error) return html`<div class="card card-pad"><div class="banner critical"><div class="banner-icon">!</div><div class="banner-body">Couldn't load action items: ${error}</div></div></div>`;
+  if (!data) return html`<div class="card card-pad center-state"><div class="spinner"></div><div>Loading…</div></div>`;
+
+  const order = { high: 0, medium: 1, low: 2 };
+  const items = [...data.actionItems].sort((a, b) => order[a.priority] - order[b.priority]);
+
+  return html`
+    <div class="card">
+      <div class="card-head"><div><h2>Action Items</h2><p>Prioritized recommendations from your audit.</p></div></div>
+      <div>
+        ${items.map(it => html`
+          <div key=${it.id} class="action-row">
+            <div class="action-priority ${it.priority}">${it.priority}</div>
+            <div>
+              <div class="action-title">${it.title}</div>
+              <div class="action-impact">${it.impact}</div>
+            </div>
+            <div class="action-area">${it.area}</div>
+          </div>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function TestInstructions() {
+  return html`
+    <div class="card card-pad">
+      <h2 style="font-size:17px;margin-bottom:8px">How to test this app</h2>
+      <p class="muted" style="margin-bottom:16px;line-height:1.55">For Shopify reviewers and internal QA. The audit data shown is illustrative mock data.</p>
+      <ol style="padding-left:22px;line-height:1.7;font-size:13.5px">
+        <li>Install the app on a Shopify development store.</li>
+        <li>The app loads embedded inside Shopify Admin and authenticates via App Bridge session tokens.</li>
+        <li>Navigate to <strong>Dashboard</strong> for an overview.</li>
+        <li>Open <strong>Connect Meta</strong> to see the OAuth flow that connects a Meta Ads account (read-only). The audit report uses mock data when Meta isn't connected, so the full UI is reviewable without any Meta account.</li>
+        <li>Open <strong>Audit Report</strong> to see the overall health score (A–F) and category breakdowns.</li>
+        <li>Open <strong>Action Items</strong> to see prioritized recommendations.</li>
+      </ol>
+      <h3 style="margin-top:22px;margin-bottom:8px">What this app does</h3>
+      <p class="muted" style="line-height:1.55;font-size:13.5px">Generates a performance audit of a Shopify store and (optionally) a connected Meta Ads account. Scores 4 categories, surfaces ranked action items.</p>
+      <h3 style="margin-top:18px;margin-bottom:8px">Data access</h3>
+      <ul style="padding-left:22px;line-height:1.7;font-size:13.5px">
+        <li><code>read_products</code>, <code>read_orders</code>, <code>read_customers</code> — to compute store performance and retention metrics.</li>
+        <li>Read-only Meta Ads access via Facebook OAuth (optional).</li>
+      </ul>
+      <h3 style="margin-top:18px;margin-bottom:8px">GDPR compliance</h3>
+      <ul style="padding-left:22px;line-height:1.7;font-size:13.5px">
+        <li><code>customers/data_request</code> · <code>customers/redact</code> · <code>shop/redact</code> — all three implemented with HMAC-SHA256 verification.</li>
+      </ul>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

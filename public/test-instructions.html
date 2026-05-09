@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECOM HOUSE Audit Tool — Test Instructions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #F6F6F7; color: #202223; -webkit-font-smoothing: antialiased; padding: 32px 20px; line-height: 1.55; font-size: 14px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: 700; letter-spacing: 1.5px; font-size: 13px; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #202223, #444); color: #C9A25A; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; letter-spacing: 0; }
+  .brand-name span { color: #C9A25A; }
+  .card { background: #fff; border: 1px solid #E1E3E5; border-radius: 12px; padding: 28px 32px; box-shadow: 0 1px 0 rgba(0,0,0,0.05); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.2px; margin-bottom: 8px; }
+  h2 { font-size: 15px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; }
+  p, li { font-size: 14px; line-height: 1.6; color: #202223; }
+  .muted { color: #6D7175; font-size: 13.5px; margin-bottom: 16px; }
+  ol, ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  code { background: #F1F2F3; padding: 1px 6px; border-radius: 4px; font-size: 12.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .meta { font-size: 12px; color: #8C9196; margin-top: 24px; padding-top: 16px; border-top: 1px solid #E1E3E5; }
+  .pill { display: inline-block; background: #E0F5EF; color: #006149; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-mark">EH</div>
+    <div class="brand-name">ECOM <span>HOUSE</span></div>
+  </div>
+  <div class="card">
+    <span class="pill">For reviewers</span>
+    <h1>How to test the ECOM HOUSE Audit Tool</h1>
+    <p class="muted">A guided walkthrough for Shopify App Store reviewers and internal QA.</p>
+
+    <h2>Installation</h2>
+    <ol>
+      <li>From the Partner Dashboard, install the app on a Shopify development store.</li>
+      <li>Shopify Admin opens the app embedded in an iframe at <code>/admin/apps/eh-full-audit</code>.</li>
+      <li>The app initializes via App Bridge and authenticates every backend call with a session token (<code>Authorization: Bearer &lt;jwt&gt;</code>) verified server-side using HS256 against <code>SHOPIFY_API_SECRET</code>.</li>
+    </ol>
+
+    <h2>What to test</h2>
+    <ol>
+      <li><strong>Dashboard</strong> — confirm the welcome screen, hero, and CTA buttons render.</li>
+      <li><strong>Connect Meta</strong> — review the read-only Meta OAuth flow. (Mock audit data is shown without an actual Meta account, so the full UI is reviewable without connecting Meta.)</li>
+      <li><strong>Audit Report</strong> — verify the A–F gauge renders, the four category cards show with status indicators, and the underlying API call is authenticated via session token.</li>
+      <li><strong>Action Items</strong> — confirm the prioritized recommendations list (High/Medium/Low badges, sorted).</li>
+    </ol>
+
+    <h2>What this app does</h2>
+    <p>Generates a performance audit of a Shopify store and (optionally) a connected Meta Ads account. Scores four categories — Store Performance, Ad Creative Health, Funnel Optimization, Retention Strategy — and surfaces a prioritized action list.</p>
+
+    <h2>Data access</h2>
+    <ul>
+      <li><code>read_products</code>, <code>read_orders</code>, <code>read_customers</code> — used to compute store performance and retention metrics.</li>
+      <li>Read-only Meta Ads access via Facebook OAuth (optional, opt-in via the Connect Meta page).</li>
+    </ul>
+
+    <h2>GDPR compliance webhooks</h2>
+    <ul>
+      <li><code>POST /api/webhooks/customers-data-request</code></li>
+      <li><code>POST /api/webhooks/customers-redact</code></li>
+      <li><code>POST /api/webhooks/shop-redact</code></li>
+    </ul>
+    <p>All three verify the <code>X-Shopify-Hmac-Sha256</code> header using <code>crypto.timingSafeEqual</code> and respond <code>200</code> on valid HMAC, <code>401</code> on invalid.</p>
+
+    <h2>Embedded rendering</h2>
+    <p>Responses set <code>Content-Security-Policy: frame-ancestors https://*.myshopify.com https://admin.shopify.com</code> so the app renders inside the Shopify Admin iframe.</p>
+
+    <div class="meta">App URL: https://eh-full-audit.vercel.app/ · Last reviewed: May 2026</div>
+  </div>
+</div>
+</body>
+</html>
